@@ -14,6 +14,7 @@ function BattleField() {
   const [power, setPower] = useState(1);
   const [enemy, setEnemy] = useState()
   const [items, setItems] = useState<Item[]>([])
+  const [killCount, setKillCount] = useState(0)
   const [gameOver, setGameOver] = useState(false)
   const api = axios.create({
     baseURL: 'http://localhost:8000/api/v1/cards'
@@ -22,6 +23,7 @@ function BattleField() {
   useEffect(() => {
     if(!enemy){
         getEnemy()
+        getPlayerDeets()
     }
     if(enemy?.hp < 1){
         getVictory()
@@ -43,6 +45,17 @@ function BattleField() {
       console.error('Error fetching enemy:', error);
     }
   };
+  const getPlayerDeets = async () => {
+    try {
+      const res = await api.get('/');
+      setHp(res.data.hp)
+      setItems(res.data.items)
+      setPower(res.data.power)
+      setKillCount(res.data.kill_count)
+    } catch (error) {
+      console.error('Error fetching enemy:', error);
+    }
+  };
   const getVictory = async () => {
     try {
       const res = await api.get('/victory');
@@ -53,26 +66,15 @@ function BattleField() {
     }
   };
 
-  const useItem = (item: Item) => {
-    const currentPounch = items
-    if(item.heal){
-      setHp(hp+item.heal)
+  const useItem = async (item: Item) => {
+    try {
+      const res = await api.post(`/use`, {item: item, current_hp: hp})
+      setHp(res.data.hp)
+      setItems(res.data.items)
+      setPower(res.data.power)
+    } catch (error) {
+      console.error(error)
     }
-    if(item.atk){
-      const equipedItem = currentPounch.find(i=>i.equiped)
-      let pow = power
-      if(equipedItem){
-        equipedItem.equiped = false
-        pow -= equipedItem?.atk || 0
-      }
-      item.equiped = true
-      setPower(pow+item.atk)
-    }
-    if(item.card_type == 'consumable'){
-      const index = currentPounch.findIndex((i => i.name === item.name))
-      currentPounch.splice(index, 1)
-    }
-    setItems(currentPounch)
   }
 
   const handleAttack = () => {
@@ -89,6 +91,7 @@ function BattleField() {
     <>
         <h1 className='absolute text-red-500 top-5 right-[45%]'>HP: {hp}</h1>
         <h1 className='absolute text-orange-500 top-5 right-[55%]'>ATK: {power}</h1>
+        <h1 className='absolute text-yellow-500 top-5 right-[65%]'>Kills: {killCount}</h1>
         <div className='cursor-pointer w-auto' onClick={() => handleAttack()}>
             <span className='absolute right-[50%]'>{enemy?.name}</span>
         </div>
