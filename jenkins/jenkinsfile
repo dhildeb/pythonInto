@@ -7,20 +7,5 @@ pipeline {
                 stash(name: 'compiled-results', includes: 'sources/*.py*') 
             }
         }
-        stage('Deliver') {
-            agent {
-                docker {
-                    image 'cdrx/pyinstaller-linux:python2'
-                }
-            }
-            steps {
-                sh 'pyinstaller --onefile server/main.py'
-            }
-            post {
-                success {
-                    archiveArtifacts 'dist/main'
-                }
-            }
-        }
     }
 }
